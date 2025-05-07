@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Symulator Operacji Lotniczych - Atari Style + Pixel Art</title>
+    <style>
+        body {
+            font-family: "Courier New", monospace;
+            background: url('https://i.ibb.co/6PNqD3X/atari-pixel-bg.png') repeat;
+            color: #0f0;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border: 4px dashed #0f0;
+            max-width: 600px;
+            margin: auto;
+            box-shadow: 0 0 20px #0f0;
+        }
+        button {
+            padding: 10px;
+            margin: 5px;
+            width: 90%;
+            font-size: 14px;
+            border: 2px solid #0f0;
+            background: #222;
+            color: #0f0;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0f0;
+            color: #000;
+        }
+        .correct {
+            background-color: #0f0;
+            color: #000;
+            animation: blink 0.5s infinite alternate;
+        }
+        .wrong {
+            background-color: #f00;
+            color: #000;
+            animation: blink 0.5s infinite alternate;
+        }
+        @keyframes blink {
+            from { opacity: 1; }
+            to { opacity: 0.4; }
+        }
+        .result, .lives, .ranking {
+            margin-top: 15px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>✈️ Atari Pixel Runway Quiz ✈️</h2>
+        <p id="runway"></p>
+        <div id="planes"></div>
+        <div class="result" id="result"></div>
+        <div class="lives" id="lives"></div>
+        <div class="ranking" id="ranking"></div>
+        <button onclick="startGame()">▶️ Rozpocznij grę</button>
+    </div>
+
+    <audio id="sound-correct" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+    <audio id="sound-wrong" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
+    <audio id="sound-gameover" src="https://actions.google.com/sounds/v1/cartoon/game_over.ogg"></audio>
+
+    <script>
+        const planes = [
+            { name: \"Boeing 737\", tora: 2500, toda: 2700, asda: 2600, lda: 2400 },
+            { name: \"Airbus A320\", tora: 2400, toda: 2600, asda: 2500, lda: 2300 },
+            { name: \"Cessna 172\", tora: 800, toda: 900, asda: 850, lda: 750 },
+            { name: \"Boeing 747\", tora: 3100, toda: 3300, asda: 3200, lda: 3000 }
+        ];
+
+        let currentRunway = {};
+        let lives = 3;
+        let score = 0;
+        let highScore = 0;
+
+        function playSound(id) {
+            const sound = document.getElementById(id);
+            sound.currentTime = 0;
+            sound.play();
+        }
+
+        function generateRunway() {
+            currentRunway = {
+                length: Math.floor(Math.random() * (3500 - 2000 + 1)) + 2000,
+                stopway: Math.floor(Math.random() * 301),
+                clearway: Math.floor(Math.random() * 301)
+            };
+            document.getElementById('runway').innerHTML =
+                `PAS: ${currentRunway.length} m | STOPWAY: ${currentRunway.stopway} m | CLEARWAY: ${currentRunway.clearway} m`;
+            showPlaneButtons();
+            document.getElementById('result').innerHTML = '';
+            updateStatus();
+        }
+
+        function showPlaneButtons() {
+            const planesDiv = document.getElementById('planes');
+            planesDiv.innerHTML = '';
+            planes.forEach((plane) => {
+                const btn = document.createElement('button');
+                btn.textContent = `✈️ ${plane.name}`;
+                btn.className = 'neutral';
+                btn.onclick = () => checkAnswer(plane, btn);
+                planesDiv.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(plane, btn) {
+            const availableTora = currentRunway.length;
+            const availableToda = availableTora + currentRunway.clearway;
+            const availableAsda = availableTora + currentRunway.stopway;
+            const availableLda = availableTora;
+
+            const isCorrect = availableTora >= plane.tora && availableToda >= plane.toda &&
+                              availableAsda >= plane.asda && availableLda >= plane.lda;
+
+            if (isCorrect) {
+                btn.className = 'correct';
+                document.getElementById('result').innerHTML = `✅ DOBRZE! Punkt.`;
+                score++;
+                playSound('sound-correct');
+            } else {
+                btn.className = 'wrong';
+                document.getElementById('result').innerHTML = `❌ ŹLE! Tracisz życie.`;
+                lives--;
+                playSound('sound-wrong');
+            }
+            updateStatus();
+
+            setTimeout(() => {
+                if (lives > 0) {
+                    generateRunway();
+                } else {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function updateStatus() {
+            document.getElementById('lives').innerHTML = `❤️ Życia: ${lives} | ⭐ Wynik: ${score}`;
+            document.getElementById('ranking').innerHTML = `🏆 Najlepszy wynik: ${highScore}`;
+        }
+
+        function startGame() {
+            lives = 3;
+            score = 0;
+            generateRunway();
+        }
+
+        function endGame() {
+            if (score > highScore) highScore = score;
+            playSound('sound-gameover');
+            document.getElementById('runway').innerHTML = '';
+            document.getElementById('planes').innerHTML = '';
+            document.getElementById('result').innerHTML = `🎮 KONIEC GRY! Twój wynik: ${score}`;
+            updateStatus();
+        }
+
+        window.onload = () => {
+            document.getElementById('result').innerHTML = 'Kliknij \"Rozpocznij grę\", aby zacząć!';
+        };
+    </script>
+</body>
+</html>
